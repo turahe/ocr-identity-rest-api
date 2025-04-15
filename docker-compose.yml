@@ -1,0 +1,11 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+      - "5678:5678"  # Debug port
+    volumes:
+      - .:/app  # Mount the current directory for hot reload
+    environment:
+      - PYTHONUNBUFFERED=1
+      - UVICORN_RELOAD=1  # Optional: Add an environment variable for reload
