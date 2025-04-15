@@ -24,6 +24,10 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      # Copy .env.example to .env
+      - name: Copy .env.example to .env
+        run: cp .env.example .env
+
       # Build the Docker image
       - name: Build Docker image
         run: |
@@ -52,6 +56,5 @@ jobs:
         run: |
           ssh -i ~/.ssh/id_rsa $SERVER_USERNAME@$SERVER_IP << 'EOF'
             docker pull ${{ secrets.DOCKER_USERNAME }}/ocr-app:latest
-            docker run -d --name ocr-app -p ${APP_PORT}:${APP_PORT} ${{ secrets.DOCKER_USERNAME }}/ocr-app:latest
+            docker run -d --name ocr-app -p 4000:4000 ${{ secrets.DOCKER_USERNAME }}/ocr-app:latest
           EOF
-
