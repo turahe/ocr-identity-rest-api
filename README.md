@@ -35,6 +35,19 @@ Build the Docker image:
 docker-compose build
 ```
 
+#### Using Docker Hub
+Pull the prebuilt Docker image from Docker Hub:
+```bash
+docker pull turahe/ocr-app:latest
+```
+
+Run the Docker container:
+```bash
+docker run -d --name ocr-app -p 4000:4000 turahe/ocr-app:latest
+```
+
+The application will be available at `http://localhost:4000`.
+
 ### 3. Run the Application
 #### Locally
 ```bash
