@@ -38,15 +38,16 @@ docker-compose build
 ### 3. Run the Application
 #### Locally
 ```bash
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+export APP_PORT=5000  # Set the application port (default is 4000)
+uvicorn main:app --host 0.0.0.0 --port $APP_PORT --reload
 ```
 
 #### Using Docker
 ```bash
-docker-compose up
+APP_PORT=5000 docker-compose up
 ```
 
-The application will be available at `http://localhost:8000`.
+The application will be available at `http://localhost:5000` (or the port you set).
 
 ### 4. Debugging
 To enable debugging, set the `DEBUG` environment variable to `1`:
@@ -70,3 +71,5 @@ The project includes a GitHub Actions workflow (`.github/workflows/deploy.yml`) 
 
 ## License
 This project is licensed under the MIT License.
+
+`

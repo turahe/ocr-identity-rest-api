@@ -48,8 +48,10 @@ jobs:
         env:
           SERVER_USERNAME: ${{ secrets.SERVER_USERNAME }}  # Pass the server username as a secret
           SERVER_IP: ${{ secrets.SERVER_IP }}  # Pass the server IP as a secret
+          APP_PORT: ${{ secrets.APP_PORT }}  # Pass the application port as a secret
         run: |
           ssh -i ~/.ssh/id_rsa $SERVER_USERNAME@$SERVER_IP << 'EOF'
             docker pull ${{ secrets.DOCKER_USERNAME }}/ocr-app:latest
-            docker run -d --name ocr-app -p 8000:8000 ${{ secrets.DOCKER_USERNAME }}/ocr-app:latest
+            docker run -d --name ocr-app -p $APP_PORT:$APP_PORT ${{ secrets.DOCKER_USERNAME }}/ocr-app:latest
           EOF
+
