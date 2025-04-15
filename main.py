@@ -34,3 +34,9 @@ async def upload_image(file: UploadFile = File(...)):
         f.write(content)
 
     return {"filename": file.filename, "content_type": file.content_type, "path": file_path}
+
+# Command to run the application
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.getenv("APP_PORT", 4000))  # Default to 4000 if APP_PORT is not set
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
