@@ -6,7 +6,7 @@ app = FastAPI()
 # Start debugpy if DEBUG environment variable is set
 if os.getenv("DEBUG") == "1":
     import debugpy
-    debugpy.listen(("0.0.0.0", 5678))
+    debugpy.listen((os.getenv("DEBUG_IP", "0.0.0.0"), 5678))  # Use IP from environment variable
     print("Debugpy is listening on port 5678. Waiting for debugger to attach...")
     debugpy.wait_for_client()
 

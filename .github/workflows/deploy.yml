@@ -36,5 +36,7 @@ jobs:
 
       # Deploy the application (optional, replace with your deployment steps)
       - name: Deploy application
+        env:
+          DEBUG_IP: ${{ secrets.DEBUG_IP }}  # Pass the debug IP as a secret
         run: |
           echo "Deployment step goes here. Replace this with your deployment commands."
