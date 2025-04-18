@@ -2,7 +2,7 @@ services:
   app:
     build: .
     ports:
-      - "${APP_PORT:-4000}:${APP_PORT:-4000}"  # Use APP_PORT or default to 4000
+      - "${APP_PORT:-8000}:${APP_PORT:-8000}"  # Use APP_PORT or default to 8000
       - "5678:5678"  # Debug port
     volumes:
       - .:/app  # Mount the current directory for hot reload
@@ -10,4 +10,4 @@ services:
       - PYTHONUNBUFFERED=1
       - UVICORN_RELOAD=1  # Optional: Add an environment variable for reload
       - DEBUG_IP=${DEBUG_IP}  # Pass the debug IP from the environment
-      - APP_PORT=${APP_PORT:-4000}  # Pass the application port
+      - APP_PORT=${APP_PORT:-8000}  # Pass the application port

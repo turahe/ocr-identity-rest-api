@@ -1,5 +1,13 @@
+import hashlib
+
 from fastapi import FastAPI, File, UploadFile, HTTPException
 import os
+from slugify import slugify
+import cv2
+import numpy as np
+import pytesseract
+from extract_text_identity import read_image
+from rules.validation_file_size_type import validate_file_size_type
 
 app = FastAPI()
 
@@ -10,9 +18,10 @@ if os.getenv("DEBUG") == "1":
     print("Debugpy is listening on port 5678. Waiting for debugger to attach...")
     debugpy.wait_for_client()
 
+
 @app.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {"message": "Hello version 1.0"}
 
 @app.get("/hello/{name}")
 async def say_hello(name: str):
@@ -20,23 +29,35 @@ async def say_hello(name: str):
 
 @app.post("/upload-image/")
 async def upload_image(file: UploadFile = File(...)):
-    max_size = 2 * 1024 * 1024  # 10MB
-    content = await file.read()
-    if len(content) > max_size:
-        raise HTTPException(status_code=413, detail="File size exceeds 10MB limit")
+    content = await validate_file_size_type(file)
 
+    # Compute the hash of the file content
+    file_hash = hashlib.sha256(content).hexdigest()
     # Ensure the directory exists
     os.makedirs("storage/images", exist_ok=True)
+    # Generate a sluggable file name
+    original_name, ext = os.path.splitext(file.filename)
+    sluggable_name = f"{file_hash}{ext}"
+    file_path = f"storage/images/{sluggable_name}"
 
-    # Save the file to the directory
-    file_path = f"storage/images/{file.filename}"
     with open(file_path, "wb") as f:
         f.write(content)
 
-    return {"filename": file.filename, "content_type": file.content_type, "path": file_path}
+    # Extract text from the saved image
+    try:
+        ocr = read_image(file_path)
+        extracted_text = ocr.output()
+    except RuntimeError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    return {
+        "filename": file.filename,
+        "content_type": file.content_type,
+        "path": file_path,
+        "result": extracted_text
+    }
 
 # Command to run the application
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.getenv("APP_PORT", 4000))  # Default to 4000 if APP_PORT is not set
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", reload=True)

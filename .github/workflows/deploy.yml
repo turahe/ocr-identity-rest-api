@@ -56,5 +56,5 @@ jobs:
         run: |
           ssh -i ~/.ssh/id_rsa $SERVER_USERNAME@$SERVER_IP << 'EOF'
             docker pull ${{ secrets.DOCKER_USERNAME }}/ocr-app:latest
-            docker run -d --name ocr-app -p 4000:4000 ${{ secrets.DOCKER_USERNAME }}/ocr-app:latest
+            docker run -d --name ocr-app -p 8000:8000 ${{ secrets.DOCKER_USERNAME }}/ocr-app:latest
           EOF

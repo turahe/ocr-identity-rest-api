@@ -43,15 +43,15 @@ docker pull turahe/ocr-app:latest
 
 Run the Docker container:
 ```bash
-docker run -d --name ocr-app -p 4000:4000 turahe/ocr-app:latest
+docker run -d --name ocr-app -p 8000:8000 turahe/ocr-app:latest
 ```
 
-The application will be available at `http://localhost:4000`.
+The application will be available at `http://localhost:8000`.
 
 ### 3. Run the Application
 #### Locally
 ```bash
-export APP_PORT=5000  # Set the application port (default is 4000)
+export APP_PORT=5000  # Set the application port (default is 8000)
 uvicorn main:app --host 0.0.0.0 --port $APP_PORT --reload
 ```
 
