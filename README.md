@@ -73,13 +73,7 @@ export DEBUG=1  # On Windows: set DEBUG=1
 - `GET /hello/{name}` - Greets the user by name.
 - `POST /upload-image/` - Upload an image and extract text.
 
-### 6. Extract Text from Images
-You can use the `read_image_to_text.py` script to extract text from an image:
-```bash
-python read_image_to_text.py <image_path>
-```
-
-### 7. Deployment
+### 6. Deployment
 The project includes a GitHub Actions workflow (`.github/workflows/deploy.yml`) for building and deploying the Docker image. Update the secrets in your repository to configure deployment.
 
 ## License

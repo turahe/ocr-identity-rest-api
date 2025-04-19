@@ -2,10 +2,6 @@ import hashlib
 
 from fastapi import FastAPI, File, UploadFile, HTTPException
 import os
-from slugify import slugify
-import cv2
-import numpy as np
-import pytesseract
 from extract_text_identity import read_image
 from rules.validation_file_size_type import validate_file_size_type
 
