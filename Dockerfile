@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Upgrade pip and install Python dependencies
 RUN pip install --upgrade pip && \
-    pip install --no-cache-dir pillow pytesseract
+    pip install --no-cache-dir pillow pytesseract debugpy
 
 # Set the working directory in the container
 WORKDIR /app
