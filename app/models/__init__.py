@@ -6,6 +6,7 @@ from .ocr_job import OCRJob
 from .audit_log import AuditLog
 from .media import Media
 from .mediable import Mediable
+from .people import People
 
 # Import all models to ensure they are registered
 __all__ = [
@@ -15,7 +16,8 @@ __all__ = [
     "OCRJob",
     "AuditLog",
     "Media",
-    "Mediable"
+    "Mediable",
+    "People"
 ]
 
 # Create metadata for Alembic

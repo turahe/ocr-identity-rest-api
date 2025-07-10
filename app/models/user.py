@@ -4,7 +4,11 @@ from sqlalchemy import Column, String, DateTime, ForeignKey, text
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
 from sqlalchemy.orm import relationship
 from .base import Base
+from passlib.context import CryptContext
+from pydantic import BaseModel
 
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class User(Base):
     """User model for authentication and user management"""
@@ -22,6 +26,7 @@ class User(Base):
     deleted_at = Column(DateTime(timezone=True), nullable=True)
     deleted_by = Column(PostgresUUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     updated_at = Column(DateTime(timezone=True), server_default=text("NOW()"), onupdate=datetime.utcnow, nullable=False)
+    password = Column(String(255), nullable=False)
     
     # Self-referencing relationships
     created_users = relationship("User", backref="creator", remote_side=[id], foreign_keys=[created_by])
@@ -47,5 +52,27 @@ class User(Base):
         """Get media by group"""
         return [rel.media for rel in self.media_relationships if rel.group == group]
     
+    def set_password(self, password: str):
+        self.password = pwd_context.hash(password)
+
+    def verify_password(self, password: str) -> bool:
+        return pwd_context.verify(password, str(self.password))
+    
     def __repr__(self) -> str:
         return f"<User(id={self.id}, username='{self.username}')>" 
+
+class UserCreate(BaseModel):
+    username: str
+    email: str
+    password: str
+
+class UserLogin(BaseModel):
+    username: str
+    password: str
+
+class UserRead(BaseModel):
+    id: str
+    username: str
+    email: str
+    class Config:
+        orm_mode = True 

@@ -5,15 +5,12 @@ import os
 import tempfile
 import time
 from typing import Dict, Any, Optional
-from celery import current_task
 from app.core.celery_app import celery_app
 from app.services.s3_service import s3_service
 from app.core.database_session import get_db
 from app.models.media import Media
 from app.models.ocr_job import OCRJob
-from app.models.user import User
-from app.utils.media_utils import MediaManager
-from extract_text_identity import read_image
+from app.services.extract_text_identity import read_image
 
 
 @celery_app.task(bind=True)

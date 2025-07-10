@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Integer, BigInteger, ForeignKey, Text
+from sqlalchemy import Column, String, Integer, BigInteger, ForeignKey, Text, DateTime
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
 from sqlalchemy.orm import relationship
 from .base import Base
@@ -27,9 +27,9 @@ class Media(Base):
     created_by = Column(PostgresUUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     updated_by = Column(PostgresUUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     deleted_by = Column(PostgresUUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
-    deleted_at = Column(BigInteger, nullable=True)
-    created_at = Column(BigInteger, nullable=True)
-    updated_at = Column(BigInteger, nullable=True)
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=True)
+    updated_at = Column(DateTime(timezone=True), nullable=True)
     
     # Self-referencing relationships
     parent = relationship("Media", backref="children", remote_side=[id])

@@ -109,6 +109,9 @@ class AppConfig(BaseSettings):
     max_file_size: int = Field(default=10 * 1024 * 1024, env="MAX_FILE_SIZE")  # 10MB
     allowed_file_types: list = Field(default=["image/jpeg", "image/png", "image/jpg"], env="ALLOWED_FILE_TYPES")
     
+    # Auth method
+    auth_method: str = Field(default="jwt", env="AUTH_METHOD")
+    
     # Database
     database: DatabaseConfig = DatabaseConfig()
     
@@ -120,6 +123,10 @@ class AppConfig(BaseSettings):
     
     # Email
     email: EmailConfig = EmailConfig()
+    
+    # API Key Auth
+    api_key: str = Field(default="", env="API_KEY")
+    api_key_name: str = Field(default="X-API-Key", env="API_KEY_NAME")
     
     @validator('environment')
     def validate_environment(cls, v):

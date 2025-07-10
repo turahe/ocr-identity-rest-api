@@ -4,9 +4,7 @@ Test script for spaCy-based identity document extraction.
 This script demonstrates the new spaCy NER extraction functionality.
 """
 
-import json
 import logging
-from typing import Dict, Any
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -41,7 +39,7 @@ def test_spacy_extraction():
     
     try:
         # Import the extraction module
-        from extract_text_identity import get_extractor, IdentityDocumentExtractor
+        from app.services.extract_text_identity import get_extractor, IdentityDocumentExtractor
         
         # Initialize extractor
         print("📦 Initializing spaCy extractor...")
@@ -146,7 +144,7 @@ def test_backward_compatibility():
     print("=" * 40)
     
     try:
-        from extract_text_identity import extract_identity_info, Result
+        from app.services.extract_text_identity import extract_identity_info, Result
         
         sample_text = """
         NIK: 3173011234567890
