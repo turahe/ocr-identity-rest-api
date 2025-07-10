@@ -1,26 +1,34 @@
 import os
-from typing import Optional
-from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, BackgroundTasks
-from sqlalchemy.orm import Session
-from app.core.database_session import get_db
-from app.core.celery_app import celery_app
-from app.tasks.ocr_tasks import process_ocr_image
-from app.tasks.media_tasks import upload_media_to_s3
-from app.services.s3_service import s3_service
-from app.utils.media_utils import MediaManager
-from app.models.user import User, UserCreate, UserLogin, UserRead
-from app.core.jwt_utils import create_access_token, decode_access_token
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from fastapi import status
-from app.models.media import Media
-from app.models.people import People
-from app.services.people_service import people_service
-from rules.validation_file_size_type import validate_file_size_type
+from fastapi import FastAPI, Request, Response
 from app.api.auth import router as auth_router
 from app.api.people import router as people_router
 from app.api.media import router as media_router
+from fastapi.middleware.cors import CORSMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 app = FastAPI(title="OCR Identity REST API", version="2.0.0")
+
+# CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Rate limiter
+limiter = Limiter(key_func=get_remote_address, default_limits=["100/minute"])
+app.state.limiter = limiter
+
+def rate_limit_exceeded_handler(request: Request, exc: Exception) -> Response:
+    return _rate_limit_exceeded_handler(request, exc)  # type: ignore
+
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 # Start debugpy if DEBUG environment variable is set
 if os.getenv("DEBUG") == "1":

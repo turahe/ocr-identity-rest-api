@@ -138,7 +138,7 @@ class MediaManager:
         """Soft delete a media record"""
         import time
         
-        media.deleted_at = int(time.time())
+        media.deleted_at = time.time()
         media.deleted_by = deleted_by
         db.commit()
         return True

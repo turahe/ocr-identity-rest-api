@@ -5,9 +5,8 @@ This service uses spaCy models to extract structured information from OCR text.
 
 import re
 import logging
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Dict,  Optional, Any, Tuple
 from dataclasses import dataclass
-from datetime import datetime
 
 try:
     import spacy

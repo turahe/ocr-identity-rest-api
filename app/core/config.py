@@ -1,19 +1,19 @@
 import os
 from typing import Optional
-from pydantic import Field, validator
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 
 
 class DatabaseConfig(BaseSettings):
     """Database configuration for PostgreSQL"""
-    host: str = Field(default="localhost", env="DB_HOST")
-    port: int = Field(default=5432, env="DB_PORT")
-    username: str = Field(default="postgres", env="DB_USERNAME")
-    password: str = Field(default="", env="DB_PASSWORD")
-    database: str = Field(default="ocr_identity_db", env="DB_NAME")
-    pool_size: int = Field(default=10, env="DB_POOL_SIZE")
-    max_overflow: int = Field(default=20, env="DB_MAX_OVERFLOW")
-    echo: bool = Field(default=False, env="DB_ECHO")
+    host: str = Field(default="localhost")
+    port: int = Field(default=5432)
+    username: str = Field(default="postgres")
+    password: str = Field(default="")
+    database: str = Field(default="ocr_identity_db")
+    pool_size: int = Field(default=10)
+    max_overflow: int = Field(default=20)
+    echo: bool = Field(default=False)
     
     @property
     def database_url(self) -> str:
@@ -32,12 +32,12 @@ class DatabaseConfig(BaseSettings):
 
 class RedisConfig(BaseSettings):
     """Redis configuration"""
-    host: str = Field(default="localhost", env="REDIS_HOST")
-    port: int = Field(default=6379, env="REDIS_PORT")
-    password: Optional[str] = Field(default=None, env="REDIS_PASSWORD")
-    db: int = Field(default=0, env="REDIS_DB")
-    max_connections: int = Field(default=10, env="REDIS_MAX_CONNECTIONS")
-    decode_responses: bool = Field(default=True, env="REDIS_DECODE_RESPONSES")
+    host: str = Field(default="localhost")
+    port: int = Field(default=6379)
+    password: Optional[str] = Field(default=None)
+    db: int = Field(default=0)
+    max_connections: int = Field(default=10)
+    decode_responses: bool = Field(default=True)
     
     @property
     def redis_url(self) -> str:
@@ -53,13 +53,13 @@ class RedisConfig(BaseSettings):
 
 class S3Config(BaseSettings):
     """AWS S3 configuration"""
-    aws_access_key_id: str = Field(..., env="AWS_ACCESS_KEY_ID")
-    aws_secret_access_key: str = Field(..., env="AWS_SECRET_ACCESS_KEY")
-    region_name: str = Field(default="us-east-1", env="AWS_REGION")
-    bucket_name: str = Field(..., env="S3_BUCKET_NAME")
-    endpoint_url: Optional[str] = Field(default=None, env="S3_ENDPOINT_URL")
-    use_ssl: bool = Field(default=True, env="S3_USE_SSL")
-    verify_ssl: bool = Field(default=True, env="S3_VERIFY_SSL")
+    aws_access_key_id: Optional[str] = Field(default=None)
+    aws_secret_access_key: Optional[str] = Field(default=None)
+    region_name: str = Field(default="us-east-1")
+    bucket_name: Optional[str] = Field(default=None)
+    endpoint_url: Optional[str] = Field(default=None)
+    use_ssl: bool = Field(default=True)
+    verify_ssl: bool = Field(default=True)
     
     class Config:
         env_prefix = "S3_"
@@ -68,18 +68,19 @@ class S3Config(BaseSettings):
 
 class EmailConfig(BaseSettings):
     """Email configuration"""
-    smtp_host: str = Field(default="smtp.gmail.com", env="EMAIL_SMTP_HOST")
-    smtp_port: int = Field(default=587, env="EMAIL_SMTP_PORT")
-    username: str = Field(..., env="EMAIL_USERNAME")
-    password: str = Field(..., env="EMAIL_PASSWORD")
-    use_tls: bool = Field(default=True, env="EMAIL_USE_TLS")
-    use_ssl: bool = Field(default=False, env="EMAIL_USE_SSL")
-    from_email: str = Field(..., env="EMAIL_FROM")
-    from_name: str = Field(default="OCR Identity API", env="EMAIL_FROM_NAME")
+    smtp_host: str = Field(default="smtp.gmail.com")
+    smtp_port: int = Field(default=587)
+    username: Optional[str] = Field(default=None)
+    password: Optional[str] = Field(default=None)
+    use_tls: bool = Field(default=True)
+    use_ssl: bool = Field(default=False)
+    from_email: Optional[str] = Field(default=None)
+    from_name: str = Field(default="OCR Identity API")
     
-    @validator('from_email')
+    @field_validator('from_email', mode='after')
+    @classmethod
     def validate_from_email(cls, v):
-        if not v or '@' not in v:
+        if v is not None and '@' not in v:
             raise ValueError('from_email must be a valid email address')
         return v
     
@@ -91,26 +92,26 @@ class EmailConfig(BaseSettings):
 class AppConfig(BaseSettings):
     """Main application configuration"""
     # App settings
-    app_name: str = Field(default="OCR Identity REST API", env="APP_NAME")
-    debug: bool = Field(default=False, env="DEBUG")
-    environment: str = Field(default="development", env="ENVIRONMENT")
+    app_name: str = Field(default="OCR Identity REST API")
+    debug: bool = Field(default=False)
+    environment: str = Field(default="development")
     
     # Server settings
-    host: str = Field(default="0.0.0.0", env="HOST")
-    port: int = Field(default=8000, env="PORT")
-    reload: bool = Field(default=True, env="RELOAD")
+    host: str = Field(default="0.0.0.0")
+    port: int = Field(default=8000)
+    reload: bool = Field(default=True)
     
     # Security
-    secret_key: str = Field(..., env="SECRET_KEY")
-    algorithm: str = Field(default="HS256", env="ALGORITHM")
-    access_token_expire_minutes: int = Field(default=30, env="ACCESS_TOKEN_EXPIRE_MINUTES")
+    secret_key: Optional[str] = Field(default=None)
+    algorithm: str = Field(default="HS256")
+    access_token_expire_minutes: int = Field(default=30)
     
     # File upload settings
-    max_file_size: int = Field(default=10 * 1024 * 1024, env="MAX_FILE_SIZE")  # 10MB
-    allowed_file_types: list = Field(default=["image/jpeg", "image/png", "image/jpg"], env="ALLOWED_FILE_TYPES")
+    max_file_size: int = Field(default=10 * 1024 * 1024)  # 10MB
+    allowed_file_types: list = Field(default=["image/jpeg", "image/png", "image/jpg"])
     
     # Auth method
-    auth_method: str = Field(default="jwt", env="AUTH_METHOD")
+    auth_method: str = Field(default="jwt")
     
     # Database
     database: DatabaseConfig = DatabaseConfig()
@@ -125,10 +126,11 @@ class AppConfig(BaseSettings):
     email: EmailConfig = EmailConfig()
     
     # API Key Auth
-    api_key: str = Field(default="", env="API_KEY")
-    api_key_name: str = Field(default="X-API-Key", env="API_KEY_NAME")
+    api_key: str = Field(default="")
+    api_key_name: str = Field(default="X-API-Key")
     
-    @validator('environment')
+    @field_validator('environment', mode='after')
+    @classmethod
     def validate_environment(cls, v):
         allowed = ['development', 'staging', 'production']
         if v not in allowed:

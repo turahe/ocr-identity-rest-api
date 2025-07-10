@@ -10,6 +10,9 @@ from app.services.ektp_image_generator import EKTPImageGenerator
 import base64
 from io import BytesIO
 from PIL import Image, ImageDraw
+from app.services.s3_service import s3_service
+from app.models.media import Media
+from app.utils.media_utils import MediaManager
 
 router = APIRouter(prefix="/people", tags=["people"])
 
@@ -201,14 +204,37 @@ async def generate_ektp_image(
         "citizenship": person.citizenship,
         "expiry_date": "SEUMUR HIDUP",  # or map if available
         "issue_date": person.created_at.strftime('%d-%m-%Y') if getattr(person, 'created_at', None) else "-",
-        "photo": ""  # Add photo path or base64 if available
+        "photo_path": ""  # Provide a valid photo path or base64 if available
     }
     generator = EKTPImageGenerator()
     template = generator._get_template_path()
     image = Image.open(template)
     draw = ImageDraw.Draw(image)
     generator.draw_text_elements(draw, data)
-    buffered = BytesIO()
-    image.save(buffered, format="PNG")
-    img_base64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
-    return {"base64_image": img_base64} 
+    buffer = BytesIO()
+    image.save(buffer, format="PNG")
+    buffer.seek(0)
+    img_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
+    # Upload to S3 using bytes
+    buffer.seek(0)
+    file_bytes = buffer.getvalue()
+    s3_result = s3_service.upload_file(file_bytes, f"ektp_{person.citizenship_identity}.png", content_type="image/png")
+    s3_key = s3_result['key']
+    s3_url = s3_result['url']
+    # Save metadata to media table
+    media = MediaManager.create_media(
+        db=db,
+        name=f"eKTP {person.full_name}",
+        file_name=s3_key,
+        disk="s3",
+        mime_type="image/png",
+        size=len(file_bytes),
+        created_by=str(current_user.id) if hasattr(current_user, 'id') else None,
+        hash=s3_result.get('hash'),
+        custom_attribute="ektp"
+    )
+    return {
+        "s3_url": s3_url,
+        "base64_image": img_base64,
+        "media_id": str(media.id)
+    } 

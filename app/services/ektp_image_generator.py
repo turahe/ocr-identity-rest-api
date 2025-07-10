@@ -5,7 +5,6 @@ Supports photo input as file path, URL, or base64 encoded string.
 """
 
 import os
-import json
 import base64
 import requests
 from io import BytesIO
@@ -15,7 +14,6 @@ from dotenv import load_dotenv
 from urllib.parse import urlparse
 
 # Load environment variables
-load_dotenv()
 
 class EKTPImageGenerator:
     """Main class for generating e-KTP images from JSON data."""

@@ -7,7 +7,7 @@ from datetime import date
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func
 
-from .base_crud_service import BaseCRUDService
+from base_crud_service import BaseCRUDService
 from app.models.people import People
 
 
