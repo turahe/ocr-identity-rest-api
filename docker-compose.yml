@@ -80,7 +80,9 @@ services:
 
   # Main Application
   app:
-    build: .
+    build:
+      context: .
+      target: development
     container_name: ocr_app
     restart: unless-stopped
     ports:
@@ -88,6 +90,7 @@ services:
       - "5678:5678"  # Debug port
     volumes:
       - .:/app
+      - /app/.venv  # Exclude Poetry virtual environment
     environment:
       - PYTHONUNBUFFERED=1
       - UVICORN_RELOAD=1
@@ -137,12 +140,15 @@ services:
 
   # Celery Worker for OCR Processing
   celery_worker_ocr:
-    build: .
+    build:
+      context: .
+      target: celery-worker
     container_name: ocr_celery_worker_ocr
     restart: unless-stopped
-    command: python scripts/start_celery_worker.py --worker --queue ocr --concurrency 2
+    command: poetry run python scripts/start_celery_worker.py --worker --queue ocr --concurrency 2
     volumes:
       - .:/app
+      - /app/.venv  # Exclude Poetry virtual environment
     environment:
       - PYTHONUNBUFFERED=1
       # Database
@@ -179,12 +185,15 @@ services:
 
   # Celery Worker for Media Processing
   celery_worker_media:
-    build: .
+    build:
+      context: .
+      target: celery-worker
     container_name: ocr_celery_worker_media
     restart: unless-stopped
-    command: python scripts/start_celery_worker.py --worker --queue media --concurrency 4
+    command: poetry run python scripts/start_celery_worker.py --worker --queue media --concurrency 4
     volumes:
       - .:/app
+      - /app/.venv  # Exclude Poetry virtual environment
     environment:
       - PYTHONUNBUFFERED=1
       # Database
@@ -221,12 +230,15 @@ services:
 
   # Celery Beat Scheduler
   celery_beat:
-    build: .
+    build:
+      context: .
+      target: celery-beat
     container_name: ocr_celery_beat
     restart: unless-stopped
-    command: python scripts/start_celery_worker.py --beat
+    command: poetry run python scripts/start_celery_worker.py --beat
     volumes:
       - .:/app
+      - /app/.venv  # Exclude Poetry virtual environment
     environment:
       - PYTHONUNBUFFERED=1
       # Database

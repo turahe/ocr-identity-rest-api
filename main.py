@@ -1,8 +1,6 @@
 import os
-import uuid
 from typing import Optional
 from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, BackgroundTasks
-from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from app.core.database_session import get_db
 from app.core.celery_app import celery_app
@@ -13,7 +11,6 @@ from app.utils.media_utils import MediaManager
 from app.models.user import User
 from app.models.media import Media
 from rules.validation_file_size_type import validate_file_size_type
-from extract_text_identity import read_image
 
 app = FastAPI(title="OCR Identity REST API", version="2.0.0")
 

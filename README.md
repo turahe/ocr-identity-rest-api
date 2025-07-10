@@ -6,6 +6,7 @@ A modern, scalable REST API for OCR identity document processing with S3 storage
 
 ### Core Functionality
 - **OCR Processing**: Extract text from identity documents (passports, ID cards, driver licenses)
+- **spaCy NER**: Advanced Named Entity Recognition for accurate information extraction
 - **S3 Storage**: Secure file storage with MinIO (S3-compatible)
 - **Database Metadata**: PostgreSQL with comprehensive media management
 - **Background Processing**: Celery workers for async OCR and media processing
@@ -19,6 +20,7 @@ A modern, scalable REST API for OCR identity document processing with S3 storage
 - **Database**: PostgreSQL 17 with Alembic migrations
 - **Caching**: Redis for session and task management
 - **Email Testing**: Mailpit for development email testing
+- **Dependency Management**: Poetry for modern Python packaging
 
 ## 🏗️ Architecture Overview
 
@@ -40,6 +42,7 @@ A modern, scalable REST API for OCR identity document processing with S3 storage
 
 - Docker and Docker Compose
 - Python 3.11+ (for local development)
+- Poetry (for dependency management)
 - Git
 
 ## 🚀 Quick Start
@@ -50,7 +53,16 @@ git clone <repository-url>
 cd ocr-identity-rest-api
 ```
 
-### 2. Environment Configuration
+### 2. Install Poetry (if not installed)
+```bash
+# Install Poetry
+curl -sSL https://install.python-poetry.org | python3 -
+
+# Or using pip
+pip install poetry
+```
+
+### 3. Environment Configuration
 ```bash
 # Copy environment template
 cp config.example.env .env
@@ -59,7 +71,16 @@ cp config.example.env .env
 nano .env
 ```
 
-### 3. Start Services
+### 4. Install Dependencies
+```bash
+# Install all dependencies (including dev)
+poetry install
+
+# Or install only production dependencies
+poetry install --only=main
+```
+
+### 5. Start Services
 ```bash
 # Start all services
 docker-compose up -d
@@ -71,16 +92,19 @@ docker-compose logs -f
 docker-compose ps
 ```
 
-### 4. Initialize Database
+### 6. Initialize Database and Models
 ```bash
 # Run migrations
-docker-compose exec app alembic upgrade head
+poetry run alembic upgrade head
 
 # Create MinIO bucket
-docker-compose exec app python scripts/setup_minio.py
+poetry run python scripts/setup_minio.py
+
+# Download spaCy models
+poetry run python scripts/download_spacy_models.py
 ```
 
-### 5. Access Services
+### 7. Access Services
 - **API**: http://localhost:8000
 - **API Docs**: http://localhost:8000/docs
 - **MinIO Console**: http://localhost:9001
@@ -276,19 +300,19 @@ CREATE TABLE ocr_jobs (
 #### OCR Worker
 ```bash
 # Start OCR worker
-python scripts/start_celery_worker.py --worker --queue ocr --concurrency 2
+poetry run python scripts/start_celery_worker.py --worker --queue ocr --concurrency 2
 ```
 
 #### Media Worker
 ```bash
 # Start media worker
-python scripts/start_celery_worker.py --worker --queue media --concurrency 4
+poetry run python scripts/start_celery_worker.py --worker --queue media --concurrency 4
 ```
 
 #### Beat Scheduler
 ```bash
 # Start beat scheduler
-python scripts/start_celery_worker.py --beat
+poetry run python scripts/start_celery_worker.py --beat
 ```
 
 ### Task Types
@@ -322,43 +346,85 @@ python scripts/start_celery_worker.py --beat
 
 ### Local Development
 ```bash
-# Install dependencies
-pip install -r requirements.txt
+# Install development dependencies
+poetry install
 
 # Run migrations
-alembic upgrade head
+poetry run alembic upgrade head
 
 # Start services
 docker-compose up -d postgres redis minio
 
 # Run application
-python main.py
+poetry run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+### Using Makefile
+```bash
+# Show all available commands
+make help
+
+# Quick development setup
+make dev-setup
+
+# Quick start with Docker
+make quick-start
+
+# Run tests
+make test
+
+# Code quality checks
+make check
+```
+
+### Poetry Commands
+```bash
+# Install dependencies
+poetry install
+
+# Add new dependency
+poetry add package-name
+
+# Add development dependency
+poetry add --group dev package-name
+
+# Update dependencies
+poetry update
+
+# Run commands in Poetry environment
+poetry run python main.py
+poetry run pytest
+poetry run black app/
+
+# Activate Poetry shell
+poetry shell
 ```
 
 ### Testing
 ```bash
 # Run all tests
-make test
-
-# Run specific test categories
-pytest tests/test_media_models.py
-pytest tests/test_ocr_tasks.py
-pytest tests/test_integration.py
+poetry run pytest
 
 # Run with coverage
-make test-coverage
+poetry run pytest --cov=app --cov-report=html
+
+# Run specific test categories
+poetry run pytest tests/test_media_models.py
+poetry run pytest tests/test_ocr_tasks.py
+poetry run pytest tests/test_integration.py
 ```
 
 ### Code Quality
 ```bash
 # Format code
-make format
+poetry run black app/ tests/ scripts/
+poetry run isort app/ tests/ scripts/
 
 # Lint code
-make lint
+poetry run flake8 app/ tests/ scripts/
 
 # Type checking
-make type-check
+poetry run mypy app/ scripts/
 ```
 
 ## 📊 Monitoring
@@ -366,10 +432,10 @@ make type-check
 ### Task Monitoring
 ```bash
 # Check Celery worker status
-docker-compose exec app celery -A app.core.celery_app inspect active
+poetry run celery -A app.core.celery_app inspect active
 
 # Monitor task queues
-docker-compose exec app celery -A app.core.celery_app inspect stats
+poetry run celery -A app.core.celery_app inspect stats
 ```
 
 ### Database Monitoring
@@ -452,6 +518,7 @@ docker-compose up -d --scale app=3
 - **Polymorphic Media**: Added flexible media relationships
 - **API Enhancement**: New endpoints for task and media management
 - **Docker Optimization**: Multi-service architecture with Celery workers
+- **Poetry Migration**: Modern dependency management with Poetry
 
 ### v1.0.0
 - Basic OCR functionality

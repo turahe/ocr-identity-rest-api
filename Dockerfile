@@ -1,70 +1,64 @@
 # Multi-stage Dockerfile for OCR Identity REST API
-# Supports: development, staging, production
+# Development, Staging, and Production environments
 
 # =============================================================================
-# Base stage - common dependencies
+# BASE STAGE - Common dependencies and setup
 # =============================================================================
 FROM python:3.11-slim as base
 
 # Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
-    libpq-dev \
+    # OCR dependencies
+    tesseract-ocr \
+    tesseract-ocr-eng \
+    # Image processing
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    # Database client
+    postgresql-client \
+    # Utilities
     curl \
     wget \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
-# Create app user
-RUN groupadd -r appuser && useradd -r -g appuser appuser
+# Install Poetry
+RUN pip install poetry==1.7.1
+
+# Configure Poetry
+ENV POETRY_NO_INTERACTION=1 \
+    POETRY_VENV_IN_PROJECT=1 \
+    POETRY_CACHE_DIR=/tmp/poetry_cache
 
 # Set work directory
 WORKDIR /app
 
-# Copy requirements first for better caching
-COPY requirements.txt .
-
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy Poetry files
+COPY pyproject.toml poetry.lock* ./
 
 # =============================================================================
-# Development stage
+# DEVELOPMENT STAGE
 # =============================================================================
 FROM base as development
 
-# Install development dependencies
-RUN pip install --no-cache-dir \
-    debugpy \
-    pytest \
-    pytest-asyncio \
-    pytest-cov \
-    black \
-    flake8 \
-    mypy
-
-# Install Tesseract OCR for development
-RUN apt-get update && apt-get install -y \
-    tesseract-ocr \
-    tesseract-ocr-eng \
-    && rm -rf /var/lib/apt/lists/*
+# Install dependencies with dev group
+RUN poetry install --only=main,dev --no-root
 
 # Copy application code
 COPY . .
 
 # Create necessary directories
 RUN mkdir -p storage/images logs
-
-# Set permissions
-RUN chown -R appuser:appuser /app
-
-# Switch to app user
-USER appuser
 
 # Expose ports
 EXPOSE 8000 5678
@@ -74,30 +68,21 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
 # Development command
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--log-level", "debug"]
+CMD ["poetry", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
 # =============================================================================
-# Staging stage
+# STAGING STAGE
 # =============================================================================
 FROM base as staging
 
-# Install Tesseract OCR
-RUN apt-get update && apt-get install -y \
-    tesseract-ocr \
-    tesseract-ocr-eng \
-    && rm -rf /var/lib/apt/lists/*
+# Install dependencies (no dev group)
+RUN poetry install --only=main --no-root
 
 # Copy application code
 COPY . .
 
 # Create necessary directories
 RUN mkdir -p storage/images logs
-
-# Set permissions
-RUN chown -R appuser:appuser /app
-
-# Switch to app user
-USER appuser
 
 # Expose ports
 EXPOSE 8000
@@ -107,18 +92,15 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
 # Staging command
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2", "--log-level", "info"]
+CMD ["poetry", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 # =============================================================================
-# Production stage
+# PRODUCTION STAGE
 # =============================================================================
 FROM base as production
 
-# Install Tesseract OCR
-RUN apt-get update && apt-get install -y \
-    tesseract-ocr \
-    tesseract-ocr-eng \
-    && rm -rf /var/lib/apt/lists/*
+# Install dependencies (only main group)
+RUN poetry install --only=main --no-root
 
 # Copy application code
 COPY . .
@@ -126,10 +108,9 @@ COPY . .
 # Create necessary directories
 RUN mkdir -p storage/images logs
 
-# Set permissions
+# Create non-root user
+RUN groupadd -r appuser && useradd -r -g appuser appuser
 RUN chown -R appuser:appuser /app
-
-# Switch to app user
 USER appuser
 
 # Expose ports
@@ -140,4 +121,56 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
 # Production command with Gunicorn
-CMD ["gunicorn", "main:app", "--bind", "0.0.0.0:8000", "--workers", "4", "--worker-class", "uvicorn.workers.UvicornWorker", "--log-level", "warning"]
+CMD ["poetry", "run", "gunicorn", "main:app", "--bind", "0.0.0.0:8000", "--workers", "4", "--worker-class", "uvicorn.workers.UvicornWorker"]
+
+# =============================================================================
+# CELERY WORKER STAGE
+# =============================================================================
+FROM base as celery-worker
+
+# Install dependencies with dev group for development
+RUN poetry install --only=main,dev --no-root
+
+# Copy application code
+COPY . .
+
+# Create necessary directories
+RUN mkdir -p logs
+
+# Create non-root user for production
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+RUN chown -R appuser:appuser /app
+USER appuser
+
+# Health check for Celery
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD poetry run celery -A app.core.celery_app inspect ping || exit 1
+
+# Default command (can be overridden)
+CMD ["poetry", "run", "python", "scripts/start_celery_worker.py", "--worker", "--queue", "default"]
+
+# =============================================================================
+# CELERY BEAT STAGE
+# =============================================================================
+FROM base as celery-beat
+
+# Install dependencies (only main group)
+RUN poetry install --only=main --no-root
+
+# Copy application code
+COPY . .
+
+# Create necessary directories
+RUN mkdir -p logs
+
+# Create non-root user
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+RUN chown -R appuser:appuser /app
+USER appuser
+
+# Health check for Celery Beat
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD poetry run celery -A app.core.celery_app inspect ping || exit 1
+
+# Beat command
+CMD ["poetry", "run", "python", "scripts/start_celery_worker.py", "--beat"]
