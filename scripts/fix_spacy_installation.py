@@ -196,7 +196,7 @@ def main():
         
         print("\n📋 Next steps:")
         print("1. Run: poetry run python scripts/download_spacy_models.py")
-        print("2. Test extraction: poetry run python test_spacy_extraction.py")
+        print("2. Test extraction: poetry run python -c \"from app.services.extract_text_identity import get_extractor; print('Extractor ready')\"")
         
         return True
     else:

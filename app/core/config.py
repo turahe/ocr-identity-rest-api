@@ -1,5 +1,5 @@
 import os
-from typing import Optional
+from typing import Optional, Dict
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 
@@ -27,6 +27,51 @@ class DatabaseConfig(BaseSettings):
     
     class Config:
         env_prefix = "DB_"
+        case_sensitive = False
+
+
+class MultiDatabaseConfig(BaseSettings):
+    """Multi-database configuration"""
+    # Default database (main application database)
+    default: DatabaseConfig = DatabaseConfig()
+    
+    # Additional databases
+    analytics: Optional[DatabaseConfig] = Field(default=None)
+    logging: Optional[DatabaseConfig] = Field(default=None)
+    archive: Optional[DatabaseConfig] = Field(default=None)
+    
+    # Database routing configuration
+    routing: Dict[str, str] = Field(default_factory=dict)
+    
+    def get_database_config(self, name: str = "default") -> DatabaseConfig:
+        """Get database configuration by name"""
+        if name == "default":
+            return self.default
+        elif name == "analytics" and self.analytics:
+            return self.analytics
+        elif name == "logging" and self.logging:
+            return self.logging
+        elif name == "archive" and self.archive:
+            return self.archive
+        else:
+            # Fallback to default
+            return self.default
+    
+    def get_all_databases(self) -> Dict[str, DatabaseConfig]:
+        """Get all configured databases"""
+        databases = {"default": self.default}
+        
+        if self.analytics:
+            databases["analytics"] = self.analytics
+        if self.logging:
+            databases["logging"] = self.logging
+        if self.archive:
+            databases["archive"] = self.archive
+            
+        return databases
+    
+    class Config:
+        env_prefix = "MULTI_DB_"
         case_sensitive = False
 
 
@@ -113,7 +158,10 @@ class AppConfig(BaseSettings):
     # Auth method
     auth_method: str = Field(default="jwt")
     
-    # Database
+    # Multi-database configuration
+    databases: MultiDatabaseConfig = MultiDatabaseConfig()
+    
+    # Legacy single database support (for backward compatibility)
     database: DatabaseConfig = DatabaseConfig()
     
     # Redis
@@ -152,9 +200,14 @@ def get_config() -> AppConfig:
     return config
 
 
-def get_database_config() -> DatabaseConfig:
-    """Get database configuration"""
-    return config.database
+def get_database_config(database_name: str = "default") -> DatabaseConfig:
+    """Get database configuration for specific database"""
+    return config.databases.get_database_config(database_name)
+
+
+def get_multi_database_config() -> MultiDatabaseConfig:
+    """Get multi-database configuration"""
+    return config.databases
 
 
 def get_redis_config() -> RedisConfig:

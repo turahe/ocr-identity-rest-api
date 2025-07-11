@@ -116,19 +116,19 @@ check: lint format type-check test
 
 docker-up:
 	@echo "🐳 Starting Docker services..."
-	docker-compose up -d
+	cd docker && docker-compose up -d
 
 docker-down:
 	@echo "🐳 Stopping Docker services..."
-	docker-compose down
+	cd docker && docker-compose down
 
 docker-logs:
 	@echo "📋 Showing Docker logs..."
-	docker-compose logs -f
+	cd docker && docker-compose logs -f
 
 docker-clean:
 	@echo "🧹 Cleaning Docker containers and volumes..."
-	docker-compose down -v --remove-orphans
+	cd docker && docker-compose down -v --remove-orphans
 	docker system prune -f
 
 # =============================================================================
@@ -196,7 +196,7 @@ health:
 
 status:
 	@echo "📊 Service status:"
-	@docker-compose ps
+	@cd docker && docker-compose ps
 
 monitor:
 	@echo "📊 Monitoring system resources..."
@@ -285,9 +285,7 @@ docs-build:
 # Testing Utilities
 # =============================================================================
 
-test-upload:
-	@echo "🧪 Testing upload functionality..."
-	poetry run python test_upload.py
+# Note: test-upload command removed as test_upload.py was deleted
 
 test-celery:
 	@echo "🧪 Testing Celery tasks..."
@@ -303,9 +301,9 @@ test-s3:
 
 backup-db:
 	@echo "💾 Creating database backup..."
-	docker-compose exec postgres pg_dump -U postgres ocr_identity_db > backup_$(shell date +%Y%m%d_%H%M%S).sql
+	cd docker && docker-compose exec postgres pg_dump -U postgres ocr_identity_db > backup_$(shell date +%Y%m%d_%H%M%S).sql
 
 restore-db:
 	@echo "📥 Restoring database from backup..."
 	@read -p "Enter backup file name: " backup_file; \
-	docker-compose exec -T postgres psql -U postgres ocr_identity_db < $$backup_file 
+	cd docker && docker-compose exec -T postgres psql -U postgres ocr_identity_db < $$backup_file 

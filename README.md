@@ -8,6 +8,7 @@ A modern, scalable REST API for OCR identity document processing with S3 storage
 - **OCR Processing**: Extract text from identity documents (passports, ID cards, driver licenses)
 - **spaCy NER**: Advanced Named Entity Recognition for accurate information extraction
 - **S3 Storage**: Secure file storage with MinIO (S3-compatible)
+- **Multi-Database Support**: Connect to multiple databases with automatic routing
 - **Database Metadata**: PostgreSQL with comprehensive media management
 - **Background Processing**: Celery workers for async OCR and media processing
 - **Polymorphic Media**: Flexible media relationships across models
@@ -17,7 +18,8 @@ A modern, scalable REST API for OCR identity document processing with S3 storage
 - **Microservices**: Docker containers for each service
 - **Queue-based Processing**: Redis-backed Celery for background tasks
 - **Object Storage**: S3-compatible storage with MinIO
-- **Database**: PostgreSQL 17 with Alembic migrations
+- **Multi-Database**: PostgreSQL 17 with support for multiple databases
+- **Database Routing**: Automatic model routing to appropriate databases
 - **Caching**: Redis for session and task management
 - **Email Testing**: Mailpit for development email testing
 - **Dependency Management**: Poetry for modern Python packaging
@@ -82,7 +84,13 @@ poetry install --only=main
 
 ### 5. Start Services
 ```bash
-# Start all services
+# Navigate to docker directory
+cd docker
+
+# Start development environment
+./start-dev.sh
+
+# Or use Docker Compose directly
 docker-compose up -d
 
 # View logs
@@ -109,6 +117,53 @@ poetry run python scripts/download_spacy_models.py
 - **API Docs**: http://localhost:8000/docs
 - **MinIO Console**: http://localhost:9001
 - **Mailpit**: http://localhost:8025
+
+## 🗄️ Multi-Database Setup
+
+The application supports connecting to multiple databases with automatic model routing.
+
+### Quick Multi-Database Setup
+
+```bash
+# Use multi-database configuration
+cp config.multi_db.example.env .env
+
+# Start multi-database services
+./start-multi-db.sh
+
+# Test multi-database functionality
+poetry run python scripts/test_multi_database.py
+```
+
+### Multi-Database Features
+
+- **Database Routing**: Models automatically routed to appropriate databases
+- **Health Monitoring**: Monitor all database connections
+- **Statistics**: Get detailed statistics for each database
+- **Query Execution**: Execute queries on specific databases
+- **Backup Information**: Get backup information for all databases
+
+### Database Types
+
+- **Default**: Main application data (User, People, Media, etc.)
+- **Analytics**: Analytics and reporting data
+- **Logging**: Application logs and audit data
+- **Archive**: Archived and historical data
+
+### API Endpoints
+
+```bash
+# Health check all databases
+curl -H "Authorization: Bearer YOUR_TOKEN" http://localhost:8000/database/health
+
+# Get database statistics
+curl -H "Authorization: Bearer YOUR_TOKEN" http://localhost:8000/database/stats
+
+# Get configured databases
+curl -H "Authorization: Bearer YOUR_TOKEN" http://localhost:8000/database/configured
+```
+
+For detailed multi-database documentation, see [docs/MULTI_DATABASE.md](docs/MULTI_DATABASE.md).
 
 ## 🔧 Configuration
 
@@ -330,6 +385,20 @@ poetry run python scripts/start_celery_worker.py --beat
 
 ## 🐳 Docker Services
 
+### Optimized Docker Structure
+The project now uses an optimized Docker setup with environment-specific configurations:
+
+```
+docker/
+├── docker-compose.yml          # Main configuration
+├── docker-compose.dev.yml      # Development overrides
+├── docker-compose.staging.yml  # Staging overrides
+├── docker-compose.prod.yml     # Production overrides
+├── docker-compose.multi-db.yml # Multi-database setup
+├── start-dev.sh               # Development startup script
+└── README.md                  # Docker documentation
+```
+
 ### Core Services
 - **app**: FastAPI application
 - **postgres**: PostgreSQL 17 database
@@ -342,6 +411,12 @@ poetry run python scripts/start_celery_worker.py --beat
 - **celery_worker_media**: Media processing worker
 - **celery_beat**: Task scheduler
 
+### Environment-Specific Features
+- **Development**: Hot reload, debug mode, reduced resources
+- **Staging**: Testing optimizations, separate ports
+- **Production**: High performance, security optimizations
+- **Multi-Database**: Separate databases for different purposes
+
 ## 🛠️ Development
 
 ### Local Development
@@ -353,7 +428,7 @@ poetry install
 poetry run alembic upgrade head
 
 # Start services
-docker-compose up -d postgres redis minio
+docker compose up -d postgres redis minio
 
 # Run application
 poetry run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
@@ -375,6 +450,27 @@ make test
 
 # Code quality checks
 make check
+```
+
+### Using Docker Commands
+```bash
+# Development environment
+cd docker && ./start-dev.sh
+
+# Staging environment
+cd docker && ./start-staging.sh
+
+# Production environment
+cd docker && ./start-prod.sh
+
+# Multi-database setup
+cd docker && docker-compose -f docker-compose.yml -f docker-compose.multi-db.yml up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
 ```
 
 ### Poetry Commands
@@ -441,7 +537,7 @@ poetry run celery -A app.core.celery_app inspect stats
 ### Database Monitoring
 ```bash
 # Connect to database
-docker-compose exec postgres psql -U postgres -d ocr_identity_db
+docker compose exec postgres psql -U postgres -d ocr_identity_db
 
 # Check media records
 SELECT COUNT(*) FROM media;
@@ -497,10 +593,10 @@ S3_BUCKET_NAME=<your-bucket>
 ### Scaling
 ```bash
 # Scale workers
-docker-compose up -d --scale celery_worker_ocr=3 --scale celery_worker_media=2
+docker compose up -d --scale celery_worker_ocr=3 --scale celery_worker_media=2
 
 # Scale application
-docker-compose up -d --scale app=3
+docker compose up -d --scale app=3
 ```
 
 ### Monitoring

@@ -3,13 +3,22 @@ from fastapi import FastAPI, Request, Response
 from app.api.auth import router as auth_router
 from app.api.people import router as people_router
 from app.api.media import router as media_router
+from app.api.database import router as database_router
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+from app.core.sentry import init_sentry
+from app.core.sentry_middleware import add_sentry_middleware
 
 app = FastAPI(title="OCR Identity REST API", version="2.0.0")
+
+# Initialize Sentry
+init_sentry()
+
+# Add Sentry middleware
+add_sentry_middleware(app)
 
 # CORS middleware
 app.add_middleware(
@@ -40,6 +49,7 @@ if os.getenv("DEBUG") == "1":
 app.include_router(auth_router)
 app.include_router(people_router)
 app.include_router(media_router)
+app.include_router(database_router)
 
 @app.get("/health")
 async def health_check():

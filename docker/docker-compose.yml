@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   # PostgreSQL 17 Database
   postgres:
@@ -13,7 +15,7 @@ services:
       - "${DB_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init-scripts:/docker-entrypoint-initdb.d
+      - ./init-scripts:/docker-entrypoint-initdb.d:ro
     networks:
       - ocr_network
     healthcheck:
@@ -21,13 +23,20 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
 
   # Redis Cache
   redis:
     image: redis:7-alpine
     container_name: ocr_redis
     restart: unless-stopped
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-}
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-} --maxmemory 256mb --maxmemory-policy allkeys-lru
     ports:
       - "${REDIS_PORT:-6379}:6379"
     volumes:
@@ -39,6 +48,13 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 128M
 
   # MinIO Object Storage (S3 Compatible)
   minio:
@@ -61,6 +77,13 @@ services:
       interval: 30s
       timeout: 20s
       retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 128M
 
   # Mailpit (Email Testing)
   mailpit:
@@ -77,11 +100,19 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 64M
 
   # Main Application
   app:
     build:
-      context: .
+      context: ..
+      dockerfile: ../Dockerfile
       target: development
     container_name: ocr_app
     restart: unless-stopped
@@ -89,7 +120,7 @@ services:
       - "${APP_PORT:-8000}:${APP_PORT:-8000}"
       - "5678:5678"  # Debug port
     volumes:
-      - .:/app
+      - ../:/app
       - /app/.venv  # Exclude Poetry virtual environment
     environment:
       - PYTHONUNBUFFERED=1
@@ -126,6 +157,11 @@ services:
       - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
       - DEBUG=${DEBUG:-false}
       - ENVIRONMENT=${ENVIRONMENT:-development}
+      # Sentry
+      - SENTRY_DSN=${SENTRY_DSN:-}
+      - SENTRY_RELEASE=${SENTRY_RELEASE:-2.0.0}
+      - SENTRY_SERVER_NAME=${SENTRY_SERVER_NAME:-ocr-identity-api}
+      - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT:-development}
     depends_on:
       postgres:
         condition: service_healthy
@@ -133,22 +169,35 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
-      mailpit:
-        condition: service_healthy
     networks:
       - ocr_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2.0'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
 
-  # Celery Worker for OCR Processing
+  # Celery Worker - OCR Processing
   celery_worker_ocr:
     build:
-      context: .
+      context: ..
+      dockerfile: ../Dockerfile
       target: celery-worker
     container_name: ocr_celery_worker_ocr
     restart: unless-stopped
-    command: poetry run python scripts/start_celery_worker.py --worker --queue ocr --concurrency 2
+    command: poetry run celery -A app.core.celery_app worker --loglevel=info --queues=ocr --concurrency=2 --hostname=worker-ocr@%h
     volumes:
-      - .:/app
-      - /app/.venv  # Exclude Poetry virtual environment
+      - ../:/app
+      - /app/.venv
     environment:
       - PYTHONUNBUFFERED=1
       # Database
@@ -173,6 +222,11 @@ services:
       - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
       - DEBUG=${DEBUG:-false}
       - ENVIRONMENT=${ENVIRONMENT:-development}
+      # Sentry
+      - SENTRY_DSN=${SENTRY_DSN:-}
+      - SENTRY_RELEASE=${SENTRY_RELEASE:-2.0.0}
+      - SENTRY_SERVER_NAME=${SENTRY_SERVER_NAME:-ocr-identity-api}
+      - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT:-development}
     depends_on:
       postgres:
         condition: service_healthy
@@ -182,18 +236,27 @@ services:
         condition: service_healthy
     networks:
       - ocr_network
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
 
-  # Celery Worker for Media Processing
+  # Celery Worker - Media Processing
   celery_worker_media:
     build:
-      context: .
+      context: ..
+      dockerfile: ../Dockerfile
       target: celery-worker
     container_name: ocr_celery_worker_media
     restart: unless-stopped
-    command: poetry run python scripts/start_celery_worker.py --worker --queue media --concurrency 4
+    command: poetry run celery -A app.core.celery_app worker --loglevel=info --queues=media --concurrency=4 --hostname=worker-media@%h
     volumes:
-      - .:/app
-      - /app/.venv  # Exclude Poetry virtual environment
+      - ../:/app
+      - /app/.venv
     environment:
       - PYTHONUNBUFFERED=1
       # Database
@@ -218,6 +281,11 @@ services:
       - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
       - DEBUG=${DEBUG:-false}
       - ENVIRONMENT=${ENVIRONMENT:-development}
+      # Sentry
+      - SENTRY_DSN=${SENTRY_DSN:-}
+      - SENTRY_RELEASE=${SENTRY_RELEASE:-2.0.0}
+      - SENTRY_SERVER_NAME=${SENTRY_SERVER_NAME:-ocr-identity-api}
+      - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT:-development}
     depends_on:
       postgres:
         condition: service_healthy
@@ -227,18 +295,27 @@ services:
         condition: service_healthy
     networks:
       - ocr_network
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
 
   # Celery Beat Scheduler
   celery_beat:
     build:
-      context: .
-      target: celery-beat
+      context: ..
+      dockerfile: ../Dockerfile
+      target: celery-worker
     container_name: ocr_celery_beat
     restart: unless-stopped
-    command: poetry run python scripts/start_celery_worker.py --beat
+    command: poetry run celery -A app.core.celery_app beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     volumes:
-      - .:/app
-      - /app/.venv  # Exclude Poetry virtual environment
+      - ../:/app
+      - /app/.venv
     environment:
       - PYTHONUNBUFFERED=1
       # Database
@@ -251,27 +328,30 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD:-}
-      # MinIO (S3)
-      - AWS_ACCESS_KEY_ID=${MINIO_ROOT_USER:-minioadmin}
-      - AWS_SECRET_ACCESS_KEY=${MINIO_ROOT_PASSWORD:-minioadmin}
-      - AWS_REGION=${AWS_REGION:-us-east-1}
-      - S3_BUCKET_NAME=${S3_BUCKET_NAME:-ocr-identity-bucket}
-      - S3_ENDPOINT_URL=http://minio:9000
-      - S3_USE_SSL=false
-      - S3_VERIFY_SSL=false
       # App settings
       - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
       - DEBUG=${DEBUG:-false}
       - ENVIRONMENT=${ENVIRONMENT:-development}
+      # Sentry
+      - SENTRY_DSN=${SENTRY_DSN:-}
+      - SENTRY_RELEASE=${SENTRY_RELEASE:-2.0.0}
+      - SENTRY_SERVER_NAME=${SENTRY_SERVER_NAME:-ocr-identity-api}
+      - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT:-development}
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-      minio:
-        condition: service_healthy
     networks:
       - ocr_network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
 
 volumes:
   postgres_data:
@@ -284,3 +364,6 @@ volumes:
 networks:
   ocr_network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16 

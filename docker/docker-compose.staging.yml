@@ -1,0 +1,122 @@
+version: '3.8'
+
+services:
+  # Staging-specific overrides
+  app:
+    build:
+      target: staging
+    environment:
+      - DEBUG=false
+      - ENVIRONMENT=staging
+      - UVICORN_RELOAD=0
+    volumes:
+      - ../:/app
+      - /app/.venv
+    ports:
+      - "8001:8000"  # Different port for staging
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+          cpus: '1.5'
+        reservations:
+          memory: 768M
+          cpus: '0.5'
+
+  celery_worker_ocr:
+    build:
+      target: staging
+    environment:
+      - DEBUG=false
+      - ENVIRONMENT=staging
+    volumes:
+      - ../:/app
+      - /app/.venv
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+          cpus: '0.75'
+        reservations:
+          memory: 384M
+          cpus: '0.25'
+
+  celery_worker_media:
+    build:
+      target: staging
+    environment:
+      - DEBUG=false
+      - ENVIRONMENT=staging
+    volumes:
+      - ../:/app
+      - /app/.venv
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+          cpus: '0.75'
+        reservations:
+          memory: 384M
+          cpus: '0.25'
+
+  celery_beat:
+    build:
+      target: staging
+    environment:
+      - DEBUG=false
+      - ENVIRONMENT=staging
+    volumes:
+      - ../:/app
+      - /app/.venv
+    deploy:
+      resources:
+        limits:
+          memory: 192M
+          cpus: '0.25'
+        reservations:
+          memory: 96M
+          cpus: '0.05'
+
+  # Staging database with moderate resources
+  postgres:
+    ports:
+      - "5433:5432"  # Different port for staging
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+        reservations:
+          memory: 384M
+
+  redis:
+    ports:
+      - "6380:6379"  # Different port for staging
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-} --maxmemory 192mb --maxmemory-policy allkeys-lru
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+        reservations:
+          memory: 96M
+
+  minio:
+    ports:
+      - "9002:9000"  # Different API port for staging
+      - "9003:9001"  # Different console port for staging
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+        reservations:
+          memory: 96M
+
+  mailpit:
+    ports:
+      - "1026:1025"  # Different SMTP port for staging
+      - "8026:8025"  # Different UI port for staging
+    deploy:
+      resources:
+        limits:
+          memory: 192M
+        reservations:
+          memory: 48M 

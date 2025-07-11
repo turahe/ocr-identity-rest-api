@@ -74,6 +74,9 @@ python-jose = {extras = ["cryptography"], version = "^3.5.0"}
 passlib = {extras = ["bcrypt"], version = "^1.7.4"}
 slowapi = "^0.1.9"
 
+# Monitoring and Error Tracking
+sentry-sdk = {extras = ["fastapi"], version = "^1.40.0"}
+
 [tool.poetry.group.dev.dependencies]
 # Testing
 pytest = "^7.4.3"
@@ -105,7 +108,6 @@ start-app = "main:main"
 start-worker = "scripts.start_celery_worker:main"
 setup-minio = "scripts.setup_minio:main"
 migrate = "scripts.migrate:main"
-test-upload = "test_upload:main"
 download-spacy-models = "scripts.download_spacy_models:main"
 
 [tool.poetry.urls]
