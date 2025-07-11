@@ -132,6 +132,33 @@ docker-clean:
 	docker system prune -f
 
 # =============================================================================
+# Docker Hub Commands
+# =============================================================================
+
+docker-hub-login:
+	@echo "🐳 Logging in to Docker Hub..."
+	@docker login
+
+docker-hub-build:
+	@echo "🏗️  Building Docker images for Docker Hub..."
+	@docker build --target production -t ocr-identity-api:latest .
+	@docker build --target development -t ocr-identity-api:dev .
+
+docker-hub-push:
+	@echo "📤 Pushing images to Docker Hub..."
+	@echo "Usage: make docker-hub-push VERSION=2.0.0 USERNAME=your-username"
+	@if [ -z "$(VERSION)" ]; then echo "Error: VERSION is required"; exit 1; fi
+	@if [ -z "$(USERNAME)" ]; then echo "Error: USERNAME is required"; exit 1; fi
+	@./scripts/docker-hub-upload.sh $(VERSION) $(USERNAME)
+
+docker-hub-upload:
+	@echo "🚀 Complete Docker Hub upload process..."
+	@echo "Usage: make docker-hub-upload VERSION=2.0.0 USERNAME=your-username"
+	@if [ -z "$(VERSION)" ]; then echo "Error: VERSION is required"; exit 1; fi
+	@if [ -z "$(USERNAME)" ]; then echo "Error: USERNAME is required"; exit 1; fi
+	@./scripts/docker-hub-upload.sh $(VERSION) $(USERNAME)
+
+# =============================================================================
 # Database Commands
 # =============================================================================
 

@@ -120,8 +120,8 @@ class MediaManager:
             hash=hash,
             custom_attribute=custom_attribute,
             parent_id=parent_id,
-            created_at=int(time.time()),
-            updated_at=int(time.time())
+            created_at=time.time(),
+            updated_at=time.time()
         )
         
         db.add(media)

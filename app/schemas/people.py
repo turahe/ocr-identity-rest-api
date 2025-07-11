@@ -1,7 +1,9 @@
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, List
 from uuid import UUID
 from datetime import date, datetime
+from app.schemas.people_addresses import PeopleAddressRead
+from app.schemas.media import MediaRead
 
 class PeopleBase(BaseModel):
     full_name: str = Field(..., max_length=255)
@@ -44,6 +46,8 @@ class PeopleRead(PeopleBase):
     created_at: Optional[datetime]
     updated_at: Optional[datetime]
     deleted_at: Optional[datetime]
+    addresses: List[PeopleAddressRead] = []
+    media: List[MediaRead] = []
 
     class Config:
         orm_mode = True 

@@ -1,0 +1,102 @@
+erDiagram
+    USERS {
+        UUID id
+        string username
+        string email
+        string phone
+        string password
+    }
+    PEOPLE {
+        UUID id
+        string full_name
+        string place_of_birth
+        date date_of_birth
+        string gender
+        string religion
+        string citizenship_identity
+        string citizenship
+        string nationality
+        string ethnicity
+        string marital_status
+        int disability_status
+        string blood_type
+        string job
+    }
+    PEOPLE_ADDRESSES {
+        UUID id
+        UUID person_id
+        string address
+        string city
+        string province
+        string postal_code
+        string country
+    }
+    MEDIA {
+        UUID id
+        string name
+        string hash
+        string file_name
+        string disk
+        string mime_type
+        int size
+        string custom_attribute
+        UUID parent_id
+    }
+    IDENTITY_DOCUMENTS {
+        UUID id
+        UUID user_id
+        string document_type
+        string document_number
+        string issuing_country
+        date issue_date
+        date expiry_date
+        jsonb extracted_data
+        string file_path
+        string s3_key
+        string status
+        string verification_notes
+    }
+    OCR_JOBS {
+        UUID id
+        UUID user_id
+        UUID document_id
+        string job_status
+        string input_file_path
+        jsonb output_data
+        string error_message
+        int processing_time_ms
+    }
+    AUDIT_LOGS {
+        UUID id
+        UUID user_id
+        string action
+        string resource_type
+        UUID resource_id
+        jsonb details
+        string ip_address
+        string user_agent
+    }
+    MEDIABLES {
+        UUID media_id
+        UUID mediable_id
+        string mediable_type
+        string group
+    }
+    USERS ||--o{ IDENTITY_DOCUMENTS : has
+    USERS ||--o{ OCR_JOBS : has
+    USERS ||--o{ AUDIT_LOGS : has
+    USERS ||--o{ PEOPLE : has
+    PEOPLE ||--o{ PEOPLE_ADDRESSES : has
+    PEOPLE_ADDRESSES }o--|| PEOPLE : belongs_to
+    PEOPLE ||--o{ MEDIA : has
+    IDENTITY_DOCUMENTS ||--o{ OCR_JOBS : has
+    IDENTITY_DOCUMENTS ||--o{ MEDIABLES : has
+    MEDIA ||--o{ MEDIABLES : has
+    MEDIABLES }o--|| MEDIA : belongs_to
+    MEDIABLES }o--|| IDENTITY_DOCUMENTS : belongs_to
+    MEDIABLES }o--|| USERS : belongs_to
+    AUDIT_LOGS }o--|| USERS : belongs_to
+    OCR_JOBS }o--|| USERS : belongs_to
+    OCR_JOBS }o--|| IDENTITY_DOCUMENTS : belongs_to
+    MEDIA ||--o{ MEDIA : parent
+    MEDIA }o--|| MEDIA : child 

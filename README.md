@@ -2,6 +2,29 @@
 
 A modern, scalable REST API for OCR identity document processing with S3 storage, database metadata management, and background task processing using Celery.
 
+## Table of Contents
+- [Features](#features)
+- [Architecture Overview](#architecture-overview)
+- [Entity Relationship Diagram (ERD)](#entity-relationship-diagram-erd)
+- [Prerequisites](#prerequisites)
+- [Quick Start](#quick-start)
+- [Docker Hub](#docker-hub)
+- [Logging](#logging)
+- [CI/CD Pipeline](#cicd-pipeline)
+- [Multi-Database Setup](#multi-database-setup)
+- [Configuration](#configuration)
+- [API Endpoints](#api-endpoints)
+- [Background Processing](#background-processing)
+- [Docker Services](#docker-services)
+- [Development](#development)
+- [Monitoring](#monitoring)
+- [Security](#security)
+- [Production Deployment](#production-deployment)
+- [Changelog](#changelog)
+- [Contributing](#contributing)
+- [License](#license)
+- [Support](#support)
+
 ## 🚀 Features
 
 ### Core Functionality
@@ -40,6 +63,12 @@ A modern, scalable REST API for OCR identity document processing with S3 storage
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
+## 🗂️ Entity Relationship Diagram (ERD)
+
+<p align="center">
+  <img src="docs/erd.svg" alt="Database ERD" width="900"/>
+</p>
+
 ## 📋 Prerequisites
 
 - Docker and Docker Compose
@@ -51,7 +80,7 @@ A modern, scalable REST API for OCR identity document processing with S3 storage
 
 ### 1. Clone and Setup
 ```bash
-git clone <repository-url>
+git clone git@github.com:turahe/ocr-identity-rest-api.git
 cd ocr-identity-rest-api
 ```
 
@@ -118,9 +147,160 @@ poetry run python scripts/download_spacy_models.py
 - **MinIO Console**: http://localhost:9001
 - **Mailpit**: http://localhost:8025
 
+## 🐳 Docker Hub
+
+The project includes scripts and commands for building and uploading Docker images to Docker Hub.
+
+### Docker Hub Upload Script
+
+The `scripts/docker-hub-upload.sh` script provides a complete workflow for building and uploading Docker images:
+
+```bash
+# Basic usage
+./scripts/docker-hub-upload.sh
+
+# With version and turahe
+./scripts/docker-hub-upload.sh 2.0.0 your-turahe
+
+# Show help
+./scripts/docker-hub-upload.sh --help
+```
+
+### Makefile Commands
+
+```bash
+# Login to Docker Hub
+make docker-hub-login
+
+# Build images for Docker Hub
+make docker-hub-build
+
+# Upload images to Docker Hub
+make docker-hub-upload VERSION=2.0.0 turahe=your-turahe
+
+# Push images to Docker Hub
+make docker-hub-push VERSION=2.0.0 turahe=your-turahe
+```
+
+### Environment Variables
+
+```bash
+# Set Docker Hub password (optional, will prompt if not set)
+export DOCKER_PASSWORD="your-dockerhub-password"
+```
+
+### Image Tags Created
+
+The script creates multiple tags for each upload:
+
+- `turahe/ocr-identity-api:version` - Production image with specific version
+- `turahe/ocr-identity-api:latest` - Latest production image
+- `turahe/ocr-identity-api:version-dev` - Development image with specific version
+- `turahe/ocr-identity-api:latest-dev` - Latest development image
+- `turahe/ocr-identity-api:vversion` - Versioned tag (if version != latest)
+- `turahe/ocr-identity-api:vversion-dev` - Versioned development tag
+
+### Features
+
+- **Authentication**: Automatic Docker Hub login with password prompt
+- **Multi-target builds**: Builds both production and development images
+- **Version tagging**: Creates multiple version tags automatically
+- **Error handling**: Comprehensive error checking and reporting
+- **Cleanup options**: Optional local image cleanup after upload
+- **Colored output**: Clear, colored status messages
+
+### Usage Examples
+
+```bash
+# Upload latest version
+./scripts/docker-hub-upload.sh latest myturahe
+
+# Upload specific version
+./scripts/docker-hub-upload.sh 2.0.0 myturahe
+
+# Upload with environment variable
+export DOCKER_PASSWORD="mypassword"
+./scripts/docker-hub-upload.sh 2.0.0 myturahe
+```
+
 ## 📊 Logging
 
 The application includes comprehensive logging with structured output, multiple handlers, and environment-specific configurations.
+
+## 🔄 CI/CD Pipeline
+
+The project includes comprehensive GitHub Actions workflows for automated testing, building, and deployment.
+
+<p align="center">
+  <img src="docs/ci-cd-workflow.svg" alt="CI/CD Workflow Diagram" width="700"/>
+</p>
+
+### Workflows Overview
+
+#### 1. CI/CD Pipeline (`ci-cd.yml`)
+- **Triggers**: Push to main/develop, Pull requests, Release published
+- **Features**: Testing, linting, Docker building, automated deployment
+- **Jobs**: Test & Quality Checks, Security Scan, Docker Build, Deploy
+
+#### 2. Manual Deploy (`deploy.yml`)
+- **Triggers**: Manual workflow dispatch
+- **Purpose**: Manual deployment to staging or production
+- **Features**: Environment selection, version specification, health checks
+
+#### 3. Release (`release.yml`)
+- **Triggers**: Release published
+- **Features**: Release asset creation, Docker image versioning
+- **Jobs**: Build Release Assets, Docker Release
+
+#### 4. Security Scan (`security.yml`)
+- **Triggers**: Weekly schedule, Manual dispatch, Push to main/develop
+- **Features**: Comprehensive security scanning, vulnerability checks
+- **Jobs**: Security Analysis, Dependency Scan, Container Scan
+
+#### 5. Documentation (`docs.yml`)
+- **Triggers**: Changes to docs/, Manual dispatch
+- **Features**: Documentation building, link validation, GitHub Pages deployment
+- **Jobs**: Build Documentation, Check Links, Deploy Docs
+
+### Required Secrets
+
+```bash
+# Docker Hub
+DOCKER_turahe=your-docker-turahe
+DOCKER_PASSWORD=your-docker-password
+
+# Production Environment
+PRODUCTION_HOST=your-production-server-ip
+PRODUCTION_turahe=your-production-turahe
+PRODUCTION_SSH_KEY=your-production-ssh-private-key
+PRODUCTION_URL=https://your-production-domain.com
+
+# Staging Environment
+STAGING_HOST=your-staging-server-ip
+STAGING_turahe=your-staging-turahe
+STAGING_SSH_KEY=your-staging-ssh-private-key
+STAGING_URL=https://your-staging-domain.com
+
+# Security Tools
+SNYK_TOKEN=your-snyk-token
+```
+
+### Usage Examples
+
+#### Manual Deployment
+1. Go to Actions tab in GitHub
+2. Select "Manual Deploy" workflow
+3. Choose environment (staging/production)
+4. Optionally specify Docker image version
+5. Click "Run workflow"
+
+#### Creating a Release
+1. Create a new release in GitHub
+2. Tag with semantic version (e.g., v2.0.0)
+3. Publish the release
+4. Workflows automatically build assets and Docker images
+
+For detailed workflow documentation, see [`.github/workflows/README.md`](.github/workflows/README.md).
 
 ### Log Files
 
@@ -243,7 +423,7 @@ For detailed multi-database documentation, see [docs/MULTI_DATABASE.md](docs/MUL
 ```env
 DB_HOST=postgres
 DB_PORT=5432
-DB_USERNAME=postgres
+DB_turahe=postgres
 DB_PASSWORD=postgres
 DB_NAME=ocr_identity_db
 ```
@@ -362,60 +542,6 @@ DELETE /media/{media_id}
 ### Health Check
 ```http
 GET /health
-```
-
-## 🗄️ Database Schema
-
-### Media Table
-```sql
-CREATE TABLE media (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name VARCHAR(255) NOT NULL,
-    hash VARCHAR(255),
-    file_name VARCHAR(255) NOT NULL,
-    disk VARCHAR(255) NOT NULL,  -- 's3', 'local'
-    mime_type VARCHAR(255) NOT NULL,
-    size INTEGER NOT NULL,
-    record_left BIGINT,
-    record_right BIGINT,
-    record_dept BIGINT,
-    record_ordering BIGINT,
-    parent_id UUID REFERENCES media(id),
-    custom_attribute VARCHAR(255),
-    created_by UUID REFERENCES users(id),
-    updated_by UUID REFERENCES users(id),
-    deleted_by UUID REFERENCES users(id),
-    deleted_at BIGINT,
-    created_at BIGINT,
-    updated_at BIGINT
-);
-```
-
-### Mediable Table (Polymorphic Relationships)
-```sql
-CREATE TABLE mediables (
-    media_id UUID REFERENCES media(id) ON DELETE CASCADE,
-    mediable_id UUID NOT NULL,
-    mediable_type VARCHAR(255) NOT NULL,
-    group VARCHAR(255) NOT NULL,
-    PRIMARY KEY (media_id, mediable_id)
-);
-```
-
-### OCR Jobs Table
-```sql
-CREATE TABLE ocr_jobs (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    document_id UUID REFERENCES identity_documents(id) ON DELETE CASCADE,
-    job_status VARCHAR(50) DEFAULT 'pending',
-    input_file_path VARCHAR(500),
-    output_data JSONB,
-    error_message TEXT,
-    processing_time_ms INTEGER,
-    created_at BIGINT,
-    updated_at BIGINT
-);
 ```
 
 ## 🔄 Background Processing
@@ -713,3 +839,4 @@ For support and questions:
 ---
 
 **Note**: This is a production-ready OCR identity document processing API with modern architecture, scalable design, and comprehensive testing. The system is designed to handle high-volume document processing with background task management and secure file storage.
+

@@ -4,6 +4,7 @@ from sqlalchemy import Column, String, Date, Integer, CheckConstraint, ForeignKe
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
 from sqlalchemy.orm import relationship
 from .base import Base
+from .people_addresses import PeopleAddress
 
 
 class People(Base):
@@ -47,6 +48,10 @@ class People(Base):
     creator = relationship("User", foreign_keys=[created_by], backref="created_people")
     updater = relationship("User", foreign_keys=[updated_by], backref="updated_people")
     deleter = relationship("User", foreign_keys=[deleted_by], backref="deleted_people")
+
+    addresses = relationship("PeopleAddress", back_populates="person", cascade="all, delete-orphan")
+
+    media = relationship("Media", back_populates="person", cascade="all, delete-orphan")
     
     # Constraints
     __table_args__ = (
@@ -81,3 +86,11 @@ class People(Base):
         if hasattr(self, 'date_of_birth') and self.date_of_birth is not None:
             data['date_of_birth'] = self.date_of_birth.isoformat()
         return data 
+
+
+# Add relationship to People
+People.addresses = relationship(
+    "PeopleAddress",
+    back_populates="person",
+    cascade="all, delete-orphan"
+) 

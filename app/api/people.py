@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import Optional
 from app.services.people_service import people_service
 from app.models.people import People
@@ -11,7 +11,6 @@ import base64
 from io import BytesIO
 from PIL import Image, ImageDraw
 from app.services.s3_service import s3_service
-from app.models.media import Media
 from app.utils.media_utils import MediaManager
 
 router = APIRouter(prefix="/people", tags=["people"])
@@ -19,7 +18,6 @@ router = APIRouter(prefix="/people", tags=["people"])
 @router.post("/", response_model=PeopleRead)
 async def create_person(
     person_data: PeopleCreate,
-    user_id: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user_or_apikey)
 ):
@@ -37,16 +35,19 @@ async def create_person(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/{person_id}", response_model=PeopleRead)
-async def get_person(person_id: str, db: Session = Depends(get_db), current_user = Depends(get_current_user_or_apikey)):
+@router.get("/{citizenship_identity}", response_model=PeopleRead)
+async def get_person(citizenship_identity: str, db: Session = Depends(get_db)):
     try:
-        from uuid import UUID
-        person = people_service.get(db, UUID(person_id))
+        person = db.query(People)\
+            .options(
+                joinedload(People.addresses),
+                joinedload(People.media)  # if you have a media relationship
+            )\
+            .filter(People.citizenship_identity == citizenship_identity)\
+            .first()
         if not person:
             raise HTTPException(status_code=404, detail="Person not found")
         return person
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid UUID format")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

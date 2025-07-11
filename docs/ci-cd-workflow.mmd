@@ -1,0 +1,28 @@
+flowchart TD
+    A[Push/PR/Release] -->|Triggers| B(CI/CD Pipeline)
+    B --> C[Test & Quality]
+    B --> D[Security Scan]
+    B --> E[Docker Build]
+    B --> F[Deploy]
+    C -->|Lint, Type Check, Test| G[Postgres/Redis Services]
+    D -->|Bandit, Safety, Snyk, Trivy| H[Security Reports]
+    E -->|Build & Test Images| I[Docker Hub]
+    F -->|Auto/Manual Deploy| J[Production/Staging Server]
+    B --> K[Docs Build]
+    K --> L[GitHub Pages]
+    subgraph Manual Deploy
+      M[Manual Trigger]
+      M --> F
+    end
+    subgraph Release
+      N[Release Published]
+      N --> O[Build Release Assets]
+      N --> P[Docker Release]
+      O --> Q[Release Artifacts]
+      P --> I
+    end
+    style B fill:#f9f,stroke:#333,stroke-width:2px
+    style F fill:#bbf,stroke:#333,stroke-width:2px
+    style I fill:#bfb,stroke:#333,stroke-width:2px
+    style J fill:#ffb,stroke:#333,stroke-width:2px
+    style L fill:#bff,stroke:#333,stroke-width:2px 
