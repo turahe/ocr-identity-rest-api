@@ -282,6 +282,35 @@ docs-build:
 	poetry run mkdocs build
 
 # =============================================================================
+# Logging Commands
+# =============================================================================
+
+setup-logging:
+	@echo "📝 Setting up logging configuration..."
+	poetry run python scripts/setup_logging.py
+
+view-logs:
+	@echo "📋 Viewing application logs..."
+	@tail -f logs/app.log
+
+view-errors:
+	@echo "❌ Viewing error logs..."
+	@tail -f logs/error.log
+
+view-access:
+	@echo "🌐 Viewing access logs..."
+	@tail -f logs/access.log
+
+clean-logs:
+	@echo "🧹 Cleaning log files..."
+	@rm -f logs/*.log
+	@echo "✅ Log files cleaned"
+
+log-stats:
+	@echo "📊 Log file statistics..."
+	@ls -lah logs/*.log 2>/dev/null || echo "No log files found"
+
+# =============================================================================
 # Testing Utilities
 # =============================================================================
 

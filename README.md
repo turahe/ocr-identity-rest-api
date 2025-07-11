@@ -118,6 +118,76 @@ poetry run python scripts/download_spacy_models.py
 - **MinIO Console**: http://localhost:9001
 - **Mailpit**: http://localhost:8025
 
+## 📊 Logging
+
+The application includes comprehensive logging with structured output, multiple handlers, and environment-specific configurations.
+
+### Log Files
+
+- **app.log**: General application logs
+- **error.log**: Error and exception logs
+- **access.log**: API request/response logs
+- **app.json**: JSON-formatted logs (production only)
+
+### Log Levels
+
+- **DEBUG**: Detailed information for debugging
+- **INFO**: General application information
+- **WARNING**: Warning messages
+- **ERROR**: Error messages and exceptions
+- **CRITICAL**: Critical system errors
+
+### Logging Commands
+
+```bash
+# Setup logging
+make setup-logging
+
+# View logs in real-time
+make view-logs          # Application logs
+make view-errors        # Error logs
+make view-access        # Access logs
+
+# Log management
+make clean-logs         # Clean all log files
+make log-stats          # Show log file statistics
+```
+
+### API Logging Endpoints
+
+```bash
+# Get list of log files
+GET /logging/logs
+
+# View log content
+GET /logging/logs/{filename}?lines=100
+
+# Download log file
+GET /logging/logs/{filename}/download
+
+# Get log statistics
+GET /logging/stats
+
+# Clear all logs (admin only)
+POST /logging/clear
+```
+
+### Logging Features
+
+- **Structured Logging**: JSON format in production
+- **Colored Output**: Colored console output in development
+- **Log Rotation**: Automatic log file rotation (10MB max, 5 backups)
+- **Request Tracking**: Request IDs for tracing
+- **Performance Monitoring**: Request timing and performance metrics
+- **Service Logging**: Dedicated loggers for S3, Redis, Email, Celery
+- **Database Logging**: SQL query logging and performance tracking
+
+### Environment-Specific Logging
+
+- **Development**: Colored console output, DEBUG level
+- **Staging**: Standard output, INFO level
+- **Production**: JSON format, INFO level, file rotation
+
 ## 🗄️ Multi-Database Setup
 
 The application supports connecting to multiple databases with automatic model routing.
