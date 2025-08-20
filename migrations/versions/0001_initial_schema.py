@@ -23,7 +23,7 @@ def upgrade() -> None:
     
     # Create users table
     op.create_table('users',
-        sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
+        sa.Column('id', sa.String(length=26), nullable=False),
         sa.Column('username', sa.String(length=255), nullable=False),
         sa.Column('email', sa.String(length=255), nullable=True),
         sa.Column('phone', sa.String(length=20), nullable=True),
@@ -31,9 +31,9 @@ def upgrade() -> None:
         sa.Column('email_verified_at', sa.DateTime(timezone=True), nullable=True),
         sa.Column('phone_verified_at', sa.DateTime(timezone=True), nullable=True),
         sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-        sa.Column('created_by', postgresql.UUID(as_uuid=True), nullable=True),
+        sa.Column('created_by', sa.String(length=26), nullable=True),
         sa.Column('deleted_at', sa.DateTime(timezone=True), nullable=True),
-        sa.Column('deleted_by', postgresql.UUID(as_uuid=True), nullable=True),
+        sa.Column('deleted_by', sa.String(length=26), nullable=True),
         sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
         sa.ForeignKeyConstraint(['created_by'], ['users.id'], ),
         sa.ForeignKeyConstraint(['deleted_by'], ['users.id'], ),
@@ -46,8 +46,8 @@ def upgrade() -> None:
     
     # Create identity_documents table
     op.create_table('identity_documents',
-        sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column('user_id', postgresql.UUID(as_uuid=True), nullable=False),
+        sa.Column('id', sa.String(length=26), nullable=False),
+        sa.Column('user_id', sa.String(length=26), nullable=False),
         sa.Column('document_type', sa.String(length=100), nullable=False),
         sa.Column('document_number', sa.String(length=255), nullable=True),
         sa.Column('issuing_country', sa.String(length=100), nullable=True),
@@ -69,9 +69,9 @@ def upgrade() -> None:
     
     # Create ocr_jobs table
     op.create_table('ocr_jobs',
-        sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column('user_id', postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column('document_id', postgresql.UUID(as_uuid=True), nullable=False),
+        sa.Column('id', sa.String(length=26), nullable=False),
+        sa.Column('user_id', sa.String(length=26), nullable=False),
+        sa.Column('document_id', sa.String(length=26), nullable=False),
         sa.Column('job_status', sa.String(length=50), nullable=False, default='pending'),
         sa.Column('input_file_path', sa.String(length=500), nullable=True),
         sa.Column('output_data', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
@@ -89,11 +89,11 @@ def upgrade() -> None:
     
     # Create audit_logs table
     op.create_table('audit_logs',
-        sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column('user_id', postgresql.UUID(as_uuid=True), nullable=True),
+        sa.Column('id', sa.String(length=26), nullable=False),
+        sa.Column('user_id', sa.String(length=26), nullable=True),
         sa.Column('action', sa.String(length=100), nullable=False),
         sa.Column('resource_type', sa.String(length=100), nullable=True),
-        sa.Column('resource_id', postgresql.UUID(as_uuid=True), nullable=True),
+        sa.Column('resource_id', sa.String(length=26), nullable=True),
         sa.Column('details', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
         sa.Column('ip_address', postgresql.INET(), nullable=True),
         sa.Column('user_agent', sa.Text(), nullable=True),
@@ -146,7 +146,7 @@ def upgrade() -> None:
     op.execute("""
         INSERT INTO users (id, username, email, created_at, updated_at)
         VALUES (
-            uuid_generate_v4(),
+            '01H9Z9Z9Z9Z9Z9Z9Z9Z9Z9Z9Z',
             'admin',
             'admin@ocr-identity.com',
             NOW(),

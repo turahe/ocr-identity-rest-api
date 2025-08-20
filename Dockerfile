@@ -4,7 +4,7 @@
 # =============================================================================
 # BASE STAGE - Common dependencies and setup
 # =============================================================================
-FROM python:3.11-slim as base
+FROM python:3.11-slim AS base
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
@@ -49,7 +49,7 @@ COPY pyproject.toml poetry.lock* ./
 # =============================================================================
 # DEVELOPMENT STAGE
 # =============================================================================
-FROM base as development
+FROM base AS development
 
 # Install dependencies with dev group
 RUN poetry install --only=main,dev --no-root
@@ -73,7 +73,7 @@ CMD ["poetry", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "800
 # =============================================================================
 # STAGING STAGE
 # =============================================================================
-FROM base as staging
+FROM base AS staging
 
 # Install dependencies (no dev group)
 RUN poetry install --only=main --no-root
@@ -92,12 +92,12 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
 # Staging command
-CMD ["poetry", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["poetry", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
 # =============================================================================
 # PRODUCTION STAGE
 # =============================================================================
-FROM base as production
+FROM base AS production
 
 # Install dependencies (only main group)
 RUN poetry install --only=main --no-root
@@ -126,7 +126,7 @@ CMD ["poetry", "run", "gunicorn", "main:app", "--bind", "0.0.0.0:8000", "--worke
 # =============================================================================
 # CELERY WORKER STAGE
 # =============================================================================
-FROM base as celery-worker
+FROM base AS celery-worker
 
 # Install dependencies with dev group for development
 RUN poetry install --only=main,dev --no-root
@@ -152,7 +152,7 @@ CMD ["poetry", "run", "python", "scripts/start_celery_worker.py", "--worker", "-
 # =============================================================================
 # CELERY BEAT STAGE
 # =============================================================================
-FROM base as celery-beat
+FROM base AS celery-beat
 
 # Install dependencies (only main group)
 RUN poetry install --only=main --no-root

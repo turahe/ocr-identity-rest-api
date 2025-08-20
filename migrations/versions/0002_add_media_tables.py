@@ -19,7 +19,7 @@ depends_on = None
 def upgrade() -> None:
     # Create media table
     op.create_table('media',
-        sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
+        sa.Column('id', sa.String(length=26), nullable=False),
         sa.Column('name', sa.String(length=255), nullable=False),
         sa.Column('hash', sa.String(length=255), nullable=True),
         sa.Column('file_name', sa.String(length=255), nullable=False),
@@ -30,11 +30,11 @@ def upgrade() -> None:
         sa.Column('record_right', sa.BigInteger(), nullable=True),
         sa.Column('record_dept', sa.BigInteger(), nullable=True),
         sa.Column('record_ordering', sa.BigInteger(), nullable=True),
-        sa.Column('parent_id', postgresql.UUID(as_uuid=True), nullable=True),
+        sa.Column('parent_id', sa.String(length=26), nullable=True),
         sa.Column('custom_attribute', sa.String(length=255), nullable=True),
-        sa.Column('created_by', postgresql.UUID(as_uuid=True), nullable=True),
-        sa.Column('updated_by', postgresql.UUID(as_uuid=True), nullable=True),
-        sa.Column('deleted_by', postgresql.UUID(as_uuid=True), nullable=True),
+        sa.Column('created_by', sa.String(length=26), nullable=True),
+        sa.Column('updated_by', sa.String(length=26), nullable=True),
+        sa.Column('deleted_by', sa.String(length=26), nullable=True),
         sa.Column('deleted_at', sa.DateTime(timezone=True), nullable=True),
         sa.Column('created_at', sa.DateTime(timezone=True), nullable=True),
         sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
@@ -47,8 +47,8 @@ def upgrade() -> None:
     
     # Create mediables table
     op.create_table('mediables',
-        sa.Column('media_id', postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column('mediable_id', postgresql.UUID(as_uuid=True), nullable=False),
+        sa.Column('media_id', sa.String(length=26), nullable=False),
+        sa.Column('mediable_id', sa.String(length=26), nullable=False),
         sa.Column('mediable_type', sa.String(length=255), nullable=False),
         sa.Column('group', sa.String(length=255), nullable=False),
         sa.ForeignKeyConstraint(['media_id'], ['media.id'], ondelete='CASCADE'),

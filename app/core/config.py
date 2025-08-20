@@ -176,6 +176,14 @@ class AppConfig(BaseSettings):
     # API Key Auth
     api_key: str = Field(default="")
     api_key_name: str = Field(default="X-API-Key")
+
+    # Mailpit and debug settings
+    mailpit_smtp_port: int = Field(default=1025)
+    mailpit_ui_port: int = Field(default=8025)
+    debug_ip: str = Field(default="0.0.0.0")
+
+    # Theme setting
+    theme: str = Field(default="light")
     
     @field_validator('environment', mode='after')
     @classmethod

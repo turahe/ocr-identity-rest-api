@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # PostgreSQL 17 Database
   postgres:
@@ -11,11 +9,8 @@ services:
       POSTGRES_USER: ${DB_USERNAME:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
       PGDATA: /var/lib/postgresql/data/pgdata
-    ports:
-      - "${DB_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init-scripts:/docker-entrypoint-initdb.d:ro
     networks:
       - ocr_network
     healthcheck:
@@ -36,9 +31,7 @@ services:
     image: redis:7-alpine
     container_name: ocr_redis
     restart: unless-stopped
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-} --maxmemory 256mb --maxmemory-policy allkeys-lru
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     volumes:
       - redis_data:/data
     networks:
@@ -111,8 +104,8 @@ services:
   # Main Application
   app:
     build:
-      context: ..
-      dockerfile: ../Dockerfile
+      context: .
+      dockerfile: Dockerfile
       target: development
     container_name: ocr_app
     restart: unless-stopped
@@ -120,8 +113,7 @@ services:
       - "${APP_PORT:-8000}:${APP_PORT:-8000}"
       - "5678:5678"  # Debug port
     volumes:
-      - ../:/app
-      - /app/.venv  # Exclude Poetry virtual environment
+      - ./:/app
     environment:
       - PYTHONUNBUFFERED=1
       - UVICORN_RELOAD=1
@@ -137,11 +129,11 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD:-}
-      # MinIO (S3)
-      - AWS_ACCESS_KEY_ID=${MINIO_ROOT_USER:-minioadmin}
-      - AWS_SECRET_ACCESS_KEY=${MINIO_ROOT_PASSWORD:-minioadmin}
-      - AWS_REGION=${AWS_REGION:-us-east-1}
-      - S3_BUCKET_NAME=${S3_BUCKET_NAME:-ocr-identity-bucket}
+      # MinIO/S3
+      - S3_AWS_ACCESS_KEY_ID=minioadmin
+      - S3_AWS_SECRET_ACCESS_KEY=minioadmin
+      - S3_REGION_NAME=us-east-1
+      - S3_BUCKET_NAME=ocr-identity-bucket
       - S3_ENDPOINT_URL=http://minio:9000
       - S3_USE_SSL=false
       - S3_VERIFY_SSL=false
@@ -189,15 +181,14 @@ services:
   # Celery Worker - OCR Processing
   celery_worker_ocr:
     build:
-      context: ..
-      dockerfile: ../Dockerfile
+      context: .
+      dockerfile: Dockerfile
       target: celery-worker
     container_name: ocr_celery_worker_ocr
     restart: unless-stopped
     command: poetry run celery -A app.core.celery_app worker --loglevel=info --queues=ocr --concurrency=2 --hostname=worker-ocr@%h
     volumes:
-      - ../:/app
-      - /app/.venv
+      - ./:/app
     environment:
       - PYTHONUNBUFFERED=1
       # Database
@@ -210,11 +201,11 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD:-}
-      # MinIO (S3)
-      - AWS_ACCESS_KEY_ID=${MINIO_ROOT_USER:-minioadmin}
-      - AWS_SECRET_ACCESS_KEY=${MINIO_ROOT_PASSWORD:-minioadmin}
-      - AWS_REGION=${AWS_REGION:-us-east-1}
-      - S3_BUCKET_NAME=${S3_BUCKET_NAME:-ocr-identity-bucket}
+      # MinIO/S3
+      - S3_AWS_ACCESS_KEY_ID=minioadmin
+      - S3_AWS_SECRET_ACCESS_KEY=minioadmin
+      - S3_REGION_NAME=us-east-1
+      - S3_BUCKET_NAME=ocr-identity-bucket
       - S3_ENDPOINT_URL=http://minio:9000
       - S3_USE_SSL=false
       - S3_VERIFY_SSL=false
@@ -248,15 +239,14 @@ services:
   # Celery Worker - Media Processing
   celery_worker_media:
     build:
-      context: ..
-      dockerfile: ../Dockerfile
+      context: .
+      dockerfile: Dockerfile
       target: celery-worker
     container_name: ocr_celery_worker_media
     restart: unless-stopped
     command: poetry run celery -A app.core.celery_app worker --loglevel=info --queues=media --concurrency=4 --hostname=worker-media@%h
     volumes:
-      - ../:/app
-      - /app/.venv
+      - ./:/app
     environment:
       - PYTHONUNBUFFERED=1
       # Database
@@ -269,11 +259,11 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD:-}
-      # MinIO (S3)
-      - AWS_ACCESS_KEY_ID=${MINIO_ROOT_USER:-minioadmin}
-      - AWS_SECRET_ACCESS_KEY=${MINIO_ROOT_PASSWORD:-minioadmin}
-      - AWS_REGION=${AWS_REGION:-us-east-1}
-      - S3_BUCKET_NAME=${S3_BUCKET_NAME:-ocr-identity-bucket}
+      # MinIO/S3
+      - S3_AWS_ACCESS_KEY_ID=minioadmin
+      - S3_AWS_SECRET_ACCESS_KEY=minioadmin
+      - S3_REGION_NAME=us-east-1
+      - S3_BUCKET_NAME=ocr-identity-bucket
       - S3_ENDPOINT_URL=http://minio:9000
       - S3_USE_SSL=false
       - S3_VERIFY_SSL=false
@@ -307,15 +297,14 @@ services:
   # Celery Beat Scheduler
   celery_beat:
     build:
-      context: ..
-      dockerfile: ../Dockerfile
+      context: .
+      dockerfile: Dockerfile
       target: celery-worker
     container_name: ocr_celery_beat
     restart: unless-stopped
     command: poetry run celery -A app.core.celery_app beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     volumes:
-      - ../:/app
-      - /app/.venv
+      - ./:/app
     environment:
       - PYTHONUNBUFFERED=1
       # Database
@@ -328,6 +317,14 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      # MinIO/S3
+      - S3_AWS_ACCESS_KEY_ID=minioadmin
+      - S3_AWS_SECRET_ACCESS_KEY=minioadmin
+      - S3_REGION_NAME=us-east-1
+      - S3_BUCKET_NAME=ocr-identity-bucket
+      - S3_ENDPOINT_URL=http://minio:9000
+      - S3_USE_SSL=false
+      - S3_VERIFY_SSL=false
       # App settings
       - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
       - DEBUG=${DEBUG:-false}
@@ -364,6 +361,3 @@ volumes:
 networks:
   ocr_network:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16 
